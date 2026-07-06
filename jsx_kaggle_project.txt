@@ -1,0 +1,281 @@
+
+---
+
+## 📁 File 4: `app.jsx`
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import './index.css';
+
+function App() {
+  const [notes, setNotes] = useState([]);
+  const [noteText, setNoteText] = useState('');
+  const [category, setCategory] = useState('Personal');
+  const [priority, setPriority] = useState('Medium');
+  const [status, setStatus] = useState('To-Do');
+  const [dueDate, setDueDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterPriority, setFilterPriority] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isAIEnabled, setIsAIEnabled] = useState(false);
+
+  // Load notes from API
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch('/api/notes');
+      const data = await response.json();
+      setNotes(data);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
+  const addNote = async () => {
+    if (!noteText.trim()) return;
+
+    try {
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: noteText,
+          category,
+          priority,
+          status,
+          due_date: dueDate || 'No due date'
+        })
+      });
+      const newNote = await response.json();
+      setNotes([newNote, ...notes]);
+      setNoteText('');
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  };
+
+  const deleteNote = async (id) => {
+    try {
+      await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+      setNotes(notes.filter(note => note.id !== id));
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
+  const toggleFavorite = async (id) => {
+    try {
+      await fetch(`/api/notes/${id}/favorite`, { method: 'PUT' });
+      setNotes(notes.map(note =>
+        note.id === id ? { ...note, favorite: !note.favorite } : note
+      ));
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const getFilteredNotes = () => {
+    let filtered = notes;
+    
+    // Apply search
+    if (searchTerm) {
+      filtered = filtered.filter(note =>
+        note.text.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply category filter
+    if (filterCategory !== 'All') {
+      filtered = filtered.filter(note => note.category === filterCategory);
+    }
+    
+    // Apply priority filter
+    if (filterPriority !== 'All') {
+      filtered = filtered.filter(note => note.priority === filterPriority);
+    }
+    
+    // Apply status filter
+    if (filterStatus !== 'All') {
+      filtered = filtered.filter(note => note.status === filterStatus);
+    }
+    
+    return filtered;
+  };
+
+  const getStats = () => {
+    const stats = { Total: notes.length };
+    ['Personal', 'Ideas', 'Work'].forEach(cat => {
+      stats[cat] = notes.filter(n => n.category === cat).length;
+    });
+    return stats;
+  };
+
+  const exportNotes = async (format) => {
+    try {
+      const response = await fetch(`/api/export?format=${format}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `notes_export.${format}`;
+      a.click();
+    } catch (error) {
+      console.error('Error exporting notes:', error);
+    }
+  };
+
+  return (
+    <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
+      <header className="header">
+        <h1>📝 Smart Note Taker</h1>
+        <div className="header-actions">
+          <span className="ai-status">
+            {isAIEnabled ? '🤖 AI Active' : '⚡ Basic Mode'}
+          </span>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="theme-toggle">
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </header>
+
+      <main className="main-content">
+        {/* Stats Section */}
+        <section className="stats-section">
+          <h2>📊 Statistics</h2>
+          <div className="stats-grid">
+            {Object.entries(getStats()).map(([key, value]) => (
+              <div key={key} className="stat-card">
+                <span className="stat-label">{key}</span>
+                <span className="stat-value">{value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Add Note Section */}
+        <section className="add-note-section">
+          <h2>✏️ Add a Note</h2>
+          <div className="note-form">
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Write your note here..."
+              rows={3}
+            />
+            <div className="form-row">
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option>Personal</option>
+                <option>Ideas</option>
+                <option>Work</option>
+              </select>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option>To-Do</option>
+                <option>In Progress</option>
+                <option>Done</option>
+              </select>
+              <input
+                type="text"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                placeholder="Due date (optional)"
+              />
+            </div>
+            <button onClick={addNote} className="btn-primary">➕ Add Note</button>
+          </div>
+        </section>
+
+        {/* Filters Section */}
+        <section className="filters-section">
+          <h2>🔍 Filters</h2>
+          <div className="filters-row">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search notes..."
+              className="search-input"
+            />
+            <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option>All</option>
+              <option>Personal</option>
+              <option>Ideas</option>
+              <option>Work</option>
+            </select>
+            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+              <option>All</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option>All</option>
+              <option>To-Do</option>
+              <option>In Progress</option>
+              <option>Done</option>
+            </select>
+          </div>
+        </section>
+
+        {/* Notes Display Section */}
+        <section className="notes-section">
+          <div className="notes-header">
+            <h2>📋 Notes ({getFilteredNotes().length})</h2>
+            <div className="export-buttons">
+              <button onClick={() => exportNotes('csv')} className="btn-secondary">📤 CSV</button>
+              <button onClick={() => exportNotes('txt')} className="btn-secondary">📤 TXT</button>
+            </div>
+          </div>
+          
+          <div className="notes-grid">
+            {getFilteredNotes().map((note) => (
+              <div key={note.id} className={`note-card priority-${note.priority.toLowerCase()}`}>
+                <div className="note-header">
+                  <span className={`priority-badge ${note.priority.toLowerCase()}`}>
+                    {note.priority}
+                  </span>
+                  <span className="category-badge">{note.category}</span>
+                  <span className="status-badge">{note.status}</span>
+                  <button
+                    onClick={() => toggleFavorite(note.id)}
+                    className="favorite-btn"
+                  >
+                    {note.favorite ? '⭐' : '☆'}
+                  </button>
+                  <button
+                    onClick={() => deleteNote(note.id)}
+                    className="delete-btn"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="note-text">{note.text}</p>
+                <div className="note-footer">
+                  <span className="note-date">📅 {note.due_date || 'No due date'}</span>
+                  <span className="note-timestamp">🕐 {note.timestamp}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer className="footer">
+        <p>
+          📌 Course: 5-Day AI Agents Intensive with Google | 🏷️ Track: Freestyle
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;

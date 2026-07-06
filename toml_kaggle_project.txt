@@ -1,0 +1,17 @@
+[project]
+name = "smart-note-agent"
+version = "1.0.0"
+description = "AI-powered note organizer with dark mode UI"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "gradio>=4.0.0",
+    "google-generativeai>=0.3.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+smart-note = "smart_note_agent:main"
