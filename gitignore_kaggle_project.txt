@@ -1,0 +1,32 @@
+# API keys and secrets
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Data files (auto-created)
+notes.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Node modules (if any)
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
